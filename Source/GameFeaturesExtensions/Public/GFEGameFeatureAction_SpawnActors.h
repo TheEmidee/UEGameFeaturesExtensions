@@ -6,6 +6,9 @@
 
 #include "GFEGameFeatureAction_SpawnActors.generated.h"
 
+// Taken from the AncientOfTheValley UE5 template.
+// Added properties to allow to choose to spawn the actors on the server and / or clients
+
 USTRUCT()
 struct FGFESpawningActorEntry
 {
