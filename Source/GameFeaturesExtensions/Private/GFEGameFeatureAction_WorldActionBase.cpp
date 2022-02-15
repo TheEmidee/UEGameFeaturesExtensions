@@ -17,7 +17,7 @@ void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureDeactivating( FGameFeat
 
 void UGFEGameFeatureAction_WorldActionBase::HandleGameInstanceStart( UGameInstance * game_instance )
 {
-    if (const FWorldContext * world_context = game_instance->GetWorldContext() )
+    if ( const FWorldContext * world_context = game_instance->GetWorldContext() )
     {
         AddToWorld( *world_context );
     }

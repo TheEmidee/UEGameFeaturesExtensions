@@ -36,7 +36,8 @@ public class GameFeaturesExtensions : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"GameFeatures"
+				"GameFeatures",
+				"DataValidationExtensions"
 			}
 			);
 		
