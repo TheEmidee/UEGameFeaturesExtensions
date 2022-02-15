@@ -20,5 +20,15 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
+	],
+	"Plugins": [
+		{
+			"Name": "GameFeatures",
+			"Enabled": true
+		},
+		{
+			"Name": "DataValidationExtensions",
+			"Enabled": true
+		}
 	]
 }
