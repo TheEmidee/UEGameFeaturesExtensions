@@ -1,8 +1,7 @@
 #pragma once
 
-#include "GFEGameFeatureAction_WorldActionBase.h"
-
 #include <CoreMinimal.h>
+#include <GameFeatureAction.h>
 
 #include "GFEGameFeatureAction_SpawnActors.generated.h"
 
@@ -41,12 +40,14 @@ struct FGFESpawningWorldActorsEntry
     TArray< FGFESpawningActorEntry > Actors;
 };
 
+// Currently works only for spawning actors on the server
 UCLASS()
-class GAMEFEATURESEXTENSIONS_API UGFEGameFeatureAction_SpawnActors final : public UGFEGameFeatureAction_WorldActionBase
+class GAMEFEATURESEXTENSIONS_API UGFEGameFeatureAction_SpawnActors final : public UGameFeatureAction
 {
     GENERATED_BODY()
 
 public:
+    void OnGameFeatureActivating() override;
     void OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context ) override;
 
 #if WITH_EDITORONLY_DATA
@@ -58,11 +59,12 @@ public:
 #endif
 
 private:
-    void AddToWorld( const FWorldContext & world_context ) override;
+    void OnGameModeInitialized( AGameModeBase * game_mode );
     void Reset();
 
     UPROPERTY( EditAnywhere, Category = "Actor" )
     TArray< FGFESpawningWorldActorsEntry > ActorsList;
 
     TArray< TWeakObjectPtr< AActor > > SpawnedActors;
+    FDelegateHandle GameModeInitializedEventDelegateHandle;
 };

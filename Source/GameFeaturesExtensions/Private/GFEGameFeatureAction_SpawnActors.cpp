@@ -4,12 +4,20 @@
 
 #include <Engine/AssetManager.h>
 #include <GameFeaturesSubsystemSettings.h>
+#include <GameFramework/GameModeBase.h>
 #include <Kismet/KismetSystemLibrary.h>
 
 FGFESpawningActorEntry::FGFESpawningActorEntry() :
     bSpawnOnServer( true ),
     bSpawnOnClients( false )
 {
+}
+
+void UGFEGameFeatureAction_SpawnActors::OnGameFeatureActivating()
+{
+    Super::OnGameFeatureActivating();
+
+    GameModeInitializedEventDelegateHandle = FGameModeEvents::GameModeInitializedEvent.AddUObject( this, &ThisClass::OnGameModeInitialized );
 }
 
 void UGFEGameFeatureAction_SpawnActors::OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context )
@@ -65,51 +73,44 @@ EDataValidationResult UGFEGameFeatureAction_SpawnActors::IsDataValid( TArray< FT
         } )
         .Result();
 }
+
 #endif
 
-void UGFEGameFeatureAction_SpawnActors::AddToWorld( const FWorldContext & world_context )
+void UGFEGameFeatureAction_SpawnActors::OnGameModeInitialized( AGameModeBase * game_mode )
 {
-    if ( const UGameInstance * game_instance = world_context.OwningGameInstance )
-    {
-        if ( UWorld * world = world_context.World() )
-        {
-            if ( world->IsGameWorld() )
-            {
-                const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
-                auto is_server = IsRunningDedicatedServer();
+    UWorld * world = game_mode->GetWorld();
+    const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
+    auto is_server = IsRunningDedicatedServer();
 
 #if WITH_EDITOR
-                checkSlow( GameInstance->GetWorldContext() );
-                is_server |= game_instance->GetWorldContext()->RunAsDedicated;
+    checkSlow( GameInstance->GetWorldContext() );
+    is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
 #endif
 
-                const auto is_client = !is_server;
+    const auto is_client = !is_server;
 
-                for ( const auto & entry : ActorsList )
-                {
-                    if ( !entry.TargetWorld.IsNull() )
-                    {
-                        UWorld * target_world = entry.TargetWorld.Get();
-                        if ( target_world != world )
-                        {
-                            continue;
-                        }
-                    }
-
-                    for ( const auto & actor_entry : entry.Actors )
-                    {
-                        const bool should_spawn_actor = is_standalone || is_server && actor_entry.bSpawnOnServer || is_client && actor_entry.bSpawnOnClients;
-
-                        if ( !should_spawn_actor )
-                        {
-                            continue;
-                        }
-
-                        AActor * new_actor = world->SpawnActor< AActor >( actor_entry.ActorType, actor_entry.SpawnTransform );
-                        SpawnedActors.Add( new_actor );
-                    }
-                }
+    for ( const auto & entry : ActorsList )
+    {
+        if ( !entry.TargetWorld.IsNull() )
+        {
+            UWorld * target_world = entry.TargetWorld.Get();
+            if ( target_world != world )
+            {
+                continue;
             }
+        }
+
+        for ( const auto & actor_entry : entry.Actors )
+        {
+            const bool should_spawn_actor = is_standalone || is_server && actor_entry.bSpawnOnServer || is_client && actor_entry.bSpawnOnClients;
+
+            if ( !should_spawn_actor )
+            {
+                continue;
+            }
+
+            AActor * new_actor = world->SpawnActor< AActor >( actor_entry.ActorType, actor_entry.SpawnTransform );
+            SpawnedActors.Add( new_actor );
         }
     }
 }
