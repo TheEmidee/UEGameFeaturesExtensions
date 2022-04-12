@@ -57,12 +57,12 @@ EDataValidationResult UGFEGameFeatureAction_SpawnActors::IsDataValid( TArray< FT
     return FDVEDataValidator( validation_errors )
         .CustomValidation< TArray< FGFESpawningWorldActorsEntry > >( ActorsList, []( TArray< FText > & errors, TArray< FGFESpawningWorldActorsEntry > actors_list ) {
             int32 entry_index = 0;
-            for ( const auto & Entry : actors_list )
+            for ( const auto & entry : actors_list )
             {
                 int32 actor_index = 0;
-                for ( const auto & ActorEntry : Entry.Actors )
+                for ( const auto & actor_entry : entry.Actors )
                 {
-                    if ( ActorEntry.ActorType == nullptr )
+                    if ( actor_entry.ActorType == nullptr )
                     {
                         errors.Emplace( FText::FromString( FString::Printf( TEXT( "Null ActorType for actor #%i at index %i in ActorsList." ), actor_index, entry_index ) ) );
                     }
@@ -73,7 +73,6 @@ EDataValidationResult UGFEGameFeatureAction_SpawnActors::IsDataValid( TArray< FT
         } )
         .Result();
 }
-
 #endif
 
 void UGFEGameFeatureAction_SpawnActors::OnGameModeInitialized( AGameModeBase * game_mode )
