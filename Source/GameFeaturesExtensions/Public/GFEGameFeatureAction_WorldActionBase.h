@@ -16,7 +16,6 @@ public:
     void OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context ) override;
 
 private:
-
     void HandleGameInstanceStart( UGameInstance * game_instance );
     virtual void AddToWorld( const FWorldContext & world_context ) PURE_VIRTUAL( UGFEGameFeatureAction_WorldActionBase::AddToWorld, );
 

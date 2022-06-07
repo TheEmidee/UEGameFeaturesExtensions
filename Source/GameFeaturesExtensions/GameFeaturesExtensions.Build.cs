@@ -24,7 +24,8 @@ public class GameFeaturesExtensions : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
+				"GameFeatures",
 			}
 			);
 			
@@ -36,7 +37,6 @@ public class GameFeaturesExtensions : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"GameFeatures",
 				"DataValidationExtensions"
 			}
 			);
