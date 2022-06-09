@@ -5,6 +5,9 @@
 
 #include "GFEGameFeatureAction_WorldActionBase.generated.h"
 
+class UGameInstance;
+struct FWorldContext;
+
 // This is a copy / paste from the one you can find in the ValleyOfTheAncient UE5 sample
 UCLASS( Abstract )
 class GAMEFEATURESEXTENSIONS_API UGFEGameFeatureAction_WorldActionBase : public UGameFeatureAction
