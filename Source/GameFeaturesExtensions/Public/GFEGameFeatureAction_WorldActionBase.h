@@ -2,9 +2,11 @@
 
 #include <CoreMinimal.h>
 #include <GameFeatureAction.h>
+#include <GameFeaturesSubsystem.h>
 
 #include "GFEGameFeatureAction_WorldActionBase.generated.h"
 
+struct FGameFeatureStateChangeContext;
 class UGameInstance;
 struct FWorldContext;
 
@@ -15,12 +17,12 @@ class GAMEFEATURESEXTENSIONS_API UGFEGameFeatureAction_WorldActionBase : public 
     GENERATED_BODY()
 
 public:
-    void OnGameFeatureActivating() override;
+    void OnGameFeatureActivating( FGameFeatureActivatingContext & context ) override;
     void OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context ) override;
 
 private:
-    void HandleGameInstanceStart( UGameInstance * game_instance );
-    virtual void AddToWorld( const FWorldContext & world_context ) PURE_VIRTUAL( UGFEGameFeatureAction_WorldActionBase::AddToWorld, );
+    void HandleGameInstanceStart( UGameInstance * game_instance, FGameFeatureStateChangeContext change_context );
+    virtual void AddToWorld( const FWorldContext & world_context, const FGameFeatureStateChangeContext & change_context ) PURE_VIRTUAL( UGFEGameFeatureAction_WorldActionBase::AddToWorld, );
 
-    FDelegateHandle GameInstanceStartHandle;
+    TMap< FGameFeatureStateChangeContext, FDelegateHandle > GameInstanceStartHandles;
 };
