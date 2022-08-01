@@ -13,18 +13,26 @@ FGFESpawningActorEntry::FGFESpawningActorEntry() :
 {
 }
 
-void UGFEGameFeatureAction_SpawnActors::OnGameFeatureActivating()
+void UGFEGameFeatureAction_SpawnActors::OnGameFeatureActivating( FGameFeatureActivatingContext & context )
 {
-    Super::OnGameFeatureActivating();
+    if ( auto & spawned_actors = SpawnedActorsMap.FindOrAdd( context );
+         !ensureAlways( spawned_actors.IsEmpty() ) )
+    {
+        Reset( spawned_actors );
+    }
 
-    GameModeInitializedEventDelegateHandle = FGameModeEvents::GameModeInitializedEvent.AddUObject( this, &ThisClass::OnGameModeInitialized );
+    Super::OnGameFeatureActivating( context );
 }
 
 void UGFEGameFeatureAction_SpawnActors::OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context )
 {
     Super::OnGameFeatureDeactivating( context );
 
-    Reset();
+    auto * spawned_actors = SpawnedActorsMap.Find( context );
+
+    ensure( spawned_actors != nullptr );
+
+    Reset( *spawned_actors );
 }
 
 #if WITH_EDITORONLY_DATA
@@ -36,7 +44,7 @@ void UGFEGameFeatureAction_SpawnActors::AddAdditionalAssetBundleData( FAssetBund
         {
             for ( const auto & actor_entry : entry.Actors )
             {
-                if ( actor_entry.bSpawnOnClients )
+                /*if ( actor_entry.bSpawnOnClients )
                 {
                     asset_bundle_data.AddBundleAsset( UGameFeaturesSubsystemSettings::LoadStateClient, actor_entry.ActorType->GetPathName() );
                 }
@@ -44,7 +52,7 @@ void UGFEGameFeatureAction_SpawnActors::AddAdditionalAssetBundleData( FAssetBund
                 if ( actor_entry.bSpawnOnServer )
                 {
                     asset_bundle_data.AddBundleAsset( UGameFeaturesSubsystemSettings::LoadStateServer, actor_entry.ActorType->GetPathName() );
-                }
+                }*/
             }
         }
     }
@@ -75,9 +83,12 @@ EDataValidationResult UGFEGameFeatureAction_SpawnActors::IsDataValid( TArray< FT
 }
 #endif
 
-void UGFEGameFeatureAction_SpawnActors::OnGameModeInitialized( AGameModeBase * game_mode )
+void UGFEGameFeatureAction_SpawnActors::AddToWorld( const FWorldContext & world_context, const FGameFeatureStateChangeContext & change_context )
 {
-    UWorld * world = game_mode->GetWorld();
+    auto * world = world_context.World();
+    const auto game_instance = world_context.OwningGameInstance;
+    auto & spawned_actors = SpawnedActorsMap.FindOrAdd( change_context );
+
     const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
     auto is_server = IsRunningDedicatedServer();
 
@@ -88,35 +99,29 @@ void UGFEGameFeatureAction_SpawnActors::OnGameModeInitialized( AGameModeBase * g
 
     const auto is_client = !is_server;
 
-    for ( const auto & entry : ActorsList )
+    if ( game_instance != nullptr && world != nullptr && world->IsGameWorld() )
     {
-        if ( !entry.TargetWorld.IsNull() )
+        for ( const auto & entry : ActorsList )
         {
-            UWorld * target_world = entry.TargetWorld.Get();
-            if ( target_world != world )
+            for ( const auto & actor_entry : entry.Actors )
             {
-                continue;
+                const bool should_spawn_actor = is_standalone || is_server && actor_entry.bSpawnOnServer || is_client && actor_entry.bSpawnOnClients;
+
+                if ( !should_spawn_actor )
+                {
+                    continue;
+                }
+
+                AActor * new_actor = world->SpawnActor< AActor >( actor_entry.ActorType, actor_entry.SpawnTransform );
+                spawned_actors.Add( new_actor );
             }
-        }
-
-        for ( const auto & actor_entry : entry.Actors )
-        {
-            const bool should_spawn_actor = is_standalone || is_server && actor_entry.bSpawnOnServer || is_client && actor_entry.bSpawnOnClients;
-
-            if ( !should_spawn_actor )
-            {
-                continue;
-            }
-
-            AActor * new_actor = world->SpawnActor< AActor >( actor_entry.ActorType, actor_entry.SpawnTransform );
-            SpawnedActors.Add( new_actor );
         }
     }
 }
 
-void UGFEGameFeatureAction_SpawnActors::Reset()
+void UGFEGameFeatureAction_SpawnActors::Reset( TArray< TWeakObjectPtr< AActor > > & actors )
 {
-    for ( auto & actor_ptr : SpawnedActors )
+    for ( auto & actor_ptr : actors )
     {
         if ( actor_ptr.IsValid() )
         {
@@ -124,5 +129,5 @@ void UGFEGameFeatureAction_SpawnActors::Reset()
         }
     }
 
-    SpawnedActors.Reset();
+    actors.Reset();
 }

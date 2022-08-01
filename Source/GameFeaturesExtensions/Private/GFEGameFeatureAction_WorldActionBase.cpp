@@ -1,24 +1,36 @@
 #include "GFEGameFeatureAction_WorldActionBase.h"
 
-void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureActivating()
+#include "GameFeaturesSubsystem.h"
+
+void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureActivating( FGameFeatureActivatingContext & context )
 {
-    GameInstanceStartHandle = FWorldDelegates::OnStartGameInstance.AddUObject( this, &UGFEGameFeatureAction_WorldActionBase::HandleGameInstanceStart );
+    GameInstanceStartHandles.FindOrAdd( context ) = FWorldDelegates::OnStartGameInstance.AddUObject( this, &ThisClass::HandleGameInstanceStart, FGameFeatureStateChangeContext( context ) );
 
     for ( const FWorldContext & world_context : GEngine->GetWorldContexts() )
     {
-        AddToWorld( world_context );
+        if ( context.ShouldApplyToWorldContext( world_context ) )
+        {
+            AddToWorld( world_context, context );
+        }
     }
 }
 
 void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context )
 {
-    FWorldDelegates::OnStartGameInstance.Remove( GameInstanceStartHandle );
+    FDelegateHandle * found_handle = GameInstanceStartHandles.Find( context );
+    if ( ensure( found_handle ) )
+    {
+        FWorldDelegates::OnStartGameInstance.Remove( *found_handle );
+    }
 }
 
-void UGFEGameFeatureAction_WorldActionBase::HandleGameInstanceStart( UGameInstance * game_instance )
+void UGFEGameFeatureAction_WorldActionBase::HandleGameInstanceStart( UGameInstance * game_instance, FGameFeatureStateChangeContext change_context )
 {
     if ( const FWorldContext * world_context = game_instance->GetWorldContext() )
     {
-        AddToWorld( *world_context );
+        if ( change_context.ShouldApplyToWorldContext( *world_context ) )
+        {
+            AddToWorld( *world_context, change_context );
+        }
     }
 }
