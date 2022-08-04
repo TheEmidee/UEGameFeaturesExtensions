@@ -86,35 +86,48 @@ EDataValidationResult UGFEGameFeatureAction_SpawnActors::IsDataValid( TArray< FT
 void UGFEGameFeatureAction_SpawnActors::AddToWorld( const FWorldContext & world_context, const FGameFeatureStateChangeContext & change_context )
 {
     auto * world = world_context.World();
+
+    if ( world == nullptr )
+    {
+        return;
+    }
+
+    if ( !world->IsGameWorld() )
+    {
+        return;
+    }
+
     const auto game_instance = world_context.OwningGameInstance;
+    if ( game_instance.IsNull() )
+    {
+        return;
+    }
+
     auto & spawned_actors = SpawnedActorsMap.FindOrAdd( change_context );
 
     const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
     auto is_server = IsRunningDedicatedServer();
 
 #if WITH_EDITOR
-    checkSlow( GameInstance->GetWorldContext() );
+    checkSlow( game_instance->GetWorldContext() );
     is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
 #endif
 
     const auto is_client = !is_server;
 
-    if ( game_instance != nullptr && world != nullptr && world->IsGameWorld() )
+    for ( const auto & entry : ActorsList )
     {
-        for ( const auto & entry : ActorsList )
+        for ( const auto & actor_entry : entry.Actors )
         {
-            for ( const auto & actor_entry : entry.Actors )
+            const bool should_spawn_actor = is_standalone || is_server && actor_entry.bSpawnOnServer || is_client && actor_entry.bSpawnOnClients;
+
+            if ( !should_spawn_actor )
             {
-                const bool should_spawn_actor = is_standalone || is_server && actor_entry.bSpawnOnServer || is_client && actor_entry.bSpawnOnClients;
-
-                if ( !should_spawn_actor )
-                {
-                    continue;
-                }
-
-                AActor * new_actor = world->SpawnActor< AActor >( actor_entry.ActorType, actor_entry.SpawnTransform );
-                spawned_actors.Add( new_actor );
+                continue;
             }
+
+            AActor * new_actor = world->SpawnActor< AActor >( actor_entry.ActorType, actor_entry.SpawnTransform );
+            spawned_actors.Add( new_actor );
         }
     }
 }
