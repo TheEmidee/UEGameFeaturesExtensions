@@ -6,7 +6,7 @@ void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureActivating( FGameFeatur
 {
     GameInstanceStartHandles.FindOrAdd( context ) = FWorldDelegates::OnStartGameInstance.AddUObject( this, &ThisClass::HandleGameInstanceStart, FGameFeatureStateChangeContext( context ) );
 
-    for ( const FWorldContext & world_context : GEngine->GetWorldContexts() )
+    for ( const auto & world_context : GEngine->GetWorldContexts() )
     {
         if ( context.ShouldApplyToWorldContext( world_context ) )
         {
@@ -17,8 +17,7 @@ void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureActivating( FGameFeatur
 
 void UGFEGameFeatureAction_WorldActionBase::OnGameFeatureDeactivating( FGameFeatureDeactivatingContext & context )
 {
-    FDelegateHandle * found_handle = GameInstanceStartHandles.Find( context );
-    if ( ensure( found_handle ) )
+    if ( const auto * found_handle = GameInstanceStartHandles.Find( context ); ensure( found_handle ) )
     {
         FWorldDelegates::OnStartGameInstance.Remove( *found_handle );
     }
