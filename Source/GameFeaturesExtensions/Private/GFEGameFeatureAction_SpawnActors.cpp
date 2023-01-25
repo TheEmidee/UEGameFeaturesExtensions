@@ -98,7 +98,7 @@ void UGFEGameFeatureAction_SpawnActors::AddToWorld( const FWorldContext & world_
     }
 
     const auto game_instance = world_context.OwningGameInstance;
-    if ( game_instance.IsNull() )
+    if ( game_instance == nullptr )
     {
         return;
     }
